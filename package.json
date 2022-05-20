@@ -1,0 +1,17 @@
+{
+  "name": "easy-idb",
+  "version": "1.0.1",
+  "description": "Makes IndexedDB storing and fetching files much easier.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "indexedDB","ajax"
+  ],
+  "author": "Fei Sun",
+  "license": "MIT",
+  "dependencies": {
+    "vaxue": "^1.2.18"
+  }
+}
