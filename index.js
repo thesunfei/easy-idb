@@ -43,7 +43,6 @@ export default {
                     }
 
                 } catch (e) {
-                    console.error(e)
                     reject(e);
                 }
             }
@@ -70,7 +69,6 @@ export default {
                         }
                     }
                 } catch (e) {
-                    console.error(e)
                     resolve(false)
                 }
             }
