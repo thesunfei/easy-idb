@@ -32,7 +32,7 @@ export default {
                             });
                             transaction = database.transaction([IDBOptions.storeName || "cache"], "readwrite");
                             store = transaction.objectStore(IDBOptions.storeName || "cache");
-                            store.put(blob, url);
+                            store.put(blob, requestOptions.url);
                             resolve({
                                 blob,
                                 get url() {
