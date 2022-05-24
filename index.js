@@ -59,6 +59,9 @@ let put = function (requestOptions, IDBOptions = {}, processOptions = {}) {
     })
 };
 let get = function (url, IDBOptions = {}, processOptions = {}) {
+    if (arguments.length == 0) {
+        throw new Error("Failed to execute 'put': 1 argument required, but only 0 present.")
+    }
     return new Promise((resolve, reject) => {
         let request = indexedDB.open(IDBOptions.dbName || "EasyIDB", IDBOptions.version || 1);
         request.onsuccess = (e) => {
@@ -93,21 +96,34 @@ export default {
     put,
     get,
     instance: function (requestOptions, IDBOptions = {}, processOptions = {}) {
+        if (arguments.length == 0) {
+            throw new Error("Failed to execute 'put': 1 argument required, but only 0 present.")
+        }
         if (typeof requestOptions == "string") {
             requestOptions = {
                 url: requestOptions
             }
         }
-        this.put = async (url) => {
+        this.put = async (url = "") => {
+            if (typeof url == "string") {
+                url = {
+                    url
+                }
+            }
             return await put({
                 ...requestOptions,
-                url
+                ...url
             }, IDBOptions, processOptions);
         }
-        this.get = async (url) => {
+        this.get = async (url = "") => {
+            if (typeof url == "string") {
+                url = {
+                    url
+                }
+            }
             return await get({
                 ...requestOptions,
-                url
+                ...url
             }, IDBOptions, processOptions);
         }
     }
