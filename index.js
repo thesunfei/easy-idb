@@ -8,16 +8,18 @@ let put = function (requestOptions, IDBOptions = {}, processOptions = {}) {
             url: requestOptions
         }
     }
+    let dbName = IDBOptions.dbName || "EasyIDB";
+    let storeName = IDBOptions.storeName || "cache";
     return new Promise((resolve, reject) => {
-        let request = indexedDB.open(IDBOptions.dbName || "EasyIDB", IDBOptions.version || 1);
+        let request = indexedDB.open(dbName, IDBOptions.version || 1);
         request.onupgradeneeded = (e) => {
-            e.target.result.createObjectStore(IDBOptions.storeName || "cache");
+            e.target.result.createObjectStore(storeName);
         };
         request.onsuccess = (e) => {
             let database = e.target.result;
             try {
-                var transaction = database.transaction([IDBOptions.storeName || "cache"], "readonly");
-                let store = transaction.objectStore(IDBOptions.storeName || "cache");
+                var transaction = database.transaction([storeName], "readonly");
+                let store = transaction.objectStore(storeName);
                 store.openCursor(requestOptions.url).onsuccess = async (e) => {
                     let cursor = e.target.result;
                     if (cursor) {
@@ -39,8 +41,8 @@ let put = function (requestOptions, IDBOptions = {}, processOptions = {}) {
                         if (processOptions.processBlob) {
                             blob = await processOptions.processBlob(blob)
                         }
-                        transaction = database.transaction([IDBOptions.storeName || "cache"], "readwrite");
-                        store = transaction.objectStore(IDBOptions.storeName || "cache");
+                        transaction = database.transaction([storeName], "readwrite");
+                        store = transaction.objectStore(storeName);
                         store.put(blob, requestOptions.url);
                         resolve({
                             blob,
@@ -52,8 +54,9 @@ let put = function (requestOptions, IDBOptions = {}, processOptions = {}) {
                 }
 
             } catch (e) {
-                console.error(e)
-                reject(e);
+                database.close();
+                indexedDB.deleteDatabase(dbName);
+                request = indexedDB.open(dbName, IDBOptions.version || 1);
             }
         }
     })
@@ -62,13 +65,21 @@ let get = function (url, IDBOptions = {}, processOptions = {}) {
     if (arguments.length == 0) {
         throw new Error("Failed to execute 'put': 1 argument required, but only 0 present.")
     }
+    if (typeof url == "object") {
+        url = url.url
+    }
+    let dbName = IDBOptions.dbName || "EasyIDB";
+    let storeName = IDBOptions.storeName || "cache";
     return new Promise((resolve, reject) => {
-        let request = indexedDB.open(IDBOptions.dbName || "EasyIDB", IDBOptions.version || 1);
+        let request = indexedDB.open(dbName, IDBOptions.version || 1);
+        request.onupgradeneeded = (e) => {
+            e.target.result.createObjectStore(storeName);
+        };
         request.onsuccess = (e) => {
+            var database = e.target.result;
             try {
-                let database = e.target.result;
-                var transaction = database.transaction([IDBOptions.storeName || "cache"], "readonly");
-                let store = transaction.objectStore(IDBOptions.storeName || "cache");
+                var transaction = database.transaction([storeName], "readonly");
+                let store = transaction.objectStore(storeName);
                 store.get(url).onsuccess = async (e) => {
                     if (e.target.result) {
                         let blob = e.target.result;

@@ -1,6 +1,6 @@
 {
   "name": "easy-idb",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Makes IndexedDB storing and fetching files much easier.",
   "main": "index.js",
   "scripts": {
