@@ -1,4 +1,18 @@
 import vaxue from "vaxue"
+
+function getHead(url) {
+    return new Promise((resolve, reject) => {
+        vaxue.ajax({
+            url,
+            method: "head",
+            responseType: "headers"
+        }).then(res => {
+            resolve(res)
+        }).catch(() => {
+            resolve({})
+        })
+    })
+}
 let put = function (requestOptions, IDBOptions = {}, processOptions = {}) {
     if (arguments.length == 0) {
         throw new Error("Failed to execute 'put': 1 argument required, but only 0 present.")
@@ -17,39 +31,47 @@ let put = function (requestOptions, IDBOptions = {}, processOptions = {}) {
         };
         request.onsuccess = (e) => {
             let database = e.target.result;
+            let ajaxGet = async (store) => {
+                let blob = await vaxue.get({
+                    ...requestOptions,
+                    responseType: "blob"
+                });
+                if (processOptions.processBlob) {
+                    blob = await processOptions.processBlob(blob)
+                }
+                transaction = database.transaction([storeName], "readwrite");
+                store = transaction.objectStore(storeName);
+                store.put(blob, requestOptions.url);
+                resolve({
+                    blob,
+                    get url() {
+                        return URL.createObjectURL(blob)
+                    }
+                });
+            }
             try {
                 var transaction = database.transaction([storeName], "readonly");
                 let store = transaction.objectStore(storeName);
                 store.openCursor(requestOptions.url).onsuccess = async (e) => {
                     let cursor = e.target.result;
+                    let headData = await getHead(requestOptions.url);
                     if (cursor) {
                         let blob = cursor.value;
-                        if (processOptions.processBlob) {
-                            blob = await processOptions.processBlob(blob)
-                        }
-                        resolve({
-                            blob,
-                            get url() {
-                                return URL.createObjectURL(blob)
+                        if (!processOptions.verifySize || processOptions.verifySize && headData["content-length"] == blob.size) {
+                            if (processOptions.processBlob) {
+                                blob = await processOptions.processBlob(blob)
                             }
-                        });
+                            resolve({
+                                blob,
+                                get url() {
+                                    return URL.createObjectURL(blob)
+                                }
+                            });
+                        } else {
+                            await ajaxGet(store)
+                        }
                     } else {
-                        let blob = await vaxue.get({
-                            ...requestOptions,
-                            responseType: "blob"
-                        });
-                        if (processOptions.processBlob) {
-                            blob = await processOptions.processBlob(blob)
-                        }
-                        transaction = database.transaction([storeName], "readwrite");
-                        store = transaction.objectStore(storeName);
-                        store.put(blob, requestOptions.url);
-                        resolve({
-                            blob,
-                            get url() {
-                                return URL.createObjectURL(blob)
-                            }
-                        });
+                        await ajaxGet(store)
                     }
                 }
 
@@ -97,7 +119,7 @@ let get = function (url, IDBOptions = {}, processOptions = {}) {
                     }
                 }
             } catch (e) {
-                console.error(e)
+                console.warn(e)
                 resolve(false)
             }
         }
